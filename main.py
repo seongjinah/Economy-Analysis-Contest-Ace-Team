@@ -1,34 +1,47 @@
-from konlpy.tag import Kkma
-from konlpy.utils import pprint
+from konlpy.tag import Okt
+from pprint import pprint
+
+import json
+import os
+import nltk
+
+okt = Okt()
 
 
 def read_data(filename):
-    t = open(filename, encoding='utf-8', mode='r')
-    t = t.read()
-    return t
+    with open(filename, encoding='utf-8', mode='r') as f:
+        data = [line.split(',') for line in f.read().splitlines()]
+        data = data[1:]
+    return data
+
+
+def tokenize(doc):
+    return ['/'.join(t) for t in okt.pos(doc, norm=True, stem=True)]
 
 
 train_data = read_data('train.csv')
 test_data = read_data('test.csv')
 
 
-kkma = Kkma()
+if os.path.isfile('train_token.json'):
+    with open('train_token.json', encoding='utf-8', mode='r') as f:
+        token = json.load(f)
 
-data = open('train.csv', encoding='utf-8', mode='r')
-data0 = open('text0.csv', encoding='utf-8', mode='w')
-data1 = open('text1.csv', encoding='utf-8', mode='w')
+else:
+    token = [(tokenize(row[2]), row[3]) for row in train_data]
 
-a = data.read()
-a = a.split('\n')
+    with open('train_token.json', mode='w', encoding="utf-8") as make_file:
+        json.dump(token, make_file, ensure_ascii=False, indent="\t")
+# d = 0
+tokens = [t for d in token for t in d[0][0]]
 
-for b in a:
-    c = b.split(',')
+text = nltk.Text(tokens, name='NMSC')
 
-    if len(c) <= 3:
-        continue
+# 전체 토큰의 개수
+print(len(text.tokens))
 
-    if c[3] == '0':
-        data0.write(c[2] + '\n')
+# 중복을 제외한 토큰의 개수
+print(len(set(text.tokens)))
 
-    elif c[3] == '1':
-        data1.write(c[2] + '\n')
+# 출현 빈도가 높은 상위 토큰 10개
+pprint(text.vocab().most_common(10))
