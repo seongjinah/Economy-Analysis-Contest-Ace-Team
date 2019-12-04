@@ -65,3 +65,4 @@ for td in testdata:
         f1.write(td[0] + ',' + str(score * 100) + '\n')
     else:
         f1.write(td[0] + ',' + str(score * 100) + '\n')
+
