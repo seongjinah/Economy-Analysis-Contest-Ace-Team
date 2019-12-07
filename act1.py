@@ -22,46 +22,37 @@ def term_frequency(doc):
 
 okt = Okt()
 
-print('start reading train.csv')
 
 train_data = read_data('train.csv')
 if os.path.isfile('train_token.json'):
     with open('train_token.json', encoding='utf-8', mode='r') as f:
         token = json.load(f)
 else:
-    print('start making train_token.json')
     token = ((tokenize(row[2]), row[3]) for row in train_data)
     with open('train_token.json', encoding="utf-8", mode='w') as make_file:
         json.dump(token, make_file, ensure_ascii=False, indent="\t")
-        print('end making train_token.json')
-
-print('end reading train.csv \n')
-
-print('start making tokens list')
 
 tokens = [t for d in token for t in d[0]]
 
-print('end making tokens list \n')
-
-print('start making clean_tokens list')
-
+clean_token = list()
 clean_tokens = list()
 
-stopwords = ['XXX', '하다', '되다']
-stopwordset = ['Josa', 'Punctuation', 'Number', 'Suffix', 'Modifier']
+stopwords = []
+stopwordset =[]
 
-# tokens 걸러주기
 for t in tokens:
-    t1, t2 = t.split('/')
-    if t1 in stopwords:
-        continue
-    if t2 in stopwordset:
-        continue
-    clean_tokens.append(t)
-
-print('end making clean_tokens list \n')
-
-print('start making selected_words.json')
+    tex = t[0]
+    num = t[1]
+    temp = list()
+    for _tex in tex:
+        t1, t2 = _tex.split('/')
+        if t1 in stopwords:
+            continue
+        if t2 in stopwordset:
+            continue
+        clean_tokens.append(t1)
+        temp.append(_tex)
+    clean_token.append([temp, num])
 
 text = nltk.Text(clean_tokens, name='NMSC')
 if os.path.isfile('selected_words.json'):
@@ -72,33 +63,18 @@ else:
     with open('selected_words.json', encoding="utf-8", mode='w') as make_file:
         json.dump(selected_words, make_file, ensure_ascii=False, indent="\t")
 
-print('end making selected_words.json \n')
-
-print('start making train_x.json')
-
 if os.path.isfile('train_x.json'):
     with open('train_x.json', encoding='utf-8', mode='r') as f:
         train_x = json.load(f)
 else:
-    train_x = [term_frequency(d[0]) for d in token]
+    train_x = [term_frequency(d[0]) for d in clean_token]
     with open('train_x.json', encoding="utf-8", mode='w') as make_file:
         json.dump(train_x, make_file, ensure_ascii=False, indent="\t")
-
-print('end making train_x.json \n')
-
-print('start making train_y.json')
 
 if os.path.isfile('train_y.json'):
     with open('train_y.json', encoding='utf-8', mode='r') as f:
         train_y = json.load(f)
 else:
-    train_y = [d[1] for d in token]
+    train_y = [d[1] for d in clean_token]
     with open('train_y.json', encoding="utf-8", mode='w') as make_file:
         json.dump(train_y, make_file, ensure_ascii=False, indent="\t")
-
-print('end making train_y.json \n')
-
-x_train = np.asarray(train_x).astype('float32')
-y_train = np.asarray(train_y).astype('float32')
-
-print('end Preprocessing')
