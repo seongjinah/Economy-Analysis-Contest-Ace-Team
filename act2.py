@@ -1,9 +1,14 @@
-from keras.layers import SimpleRNN, Embedding, Dense
-from keras.models import Sequential
 from konlpy.tag import Okt
-import matplotlib.pyplot as plt
+from keras import models
+from keras import layers
+from keras import optimizers
+from keras import losses
+from keras import metrics
 import numpy as np
 import json
+import os
+import nltk
+okt = Okt()
 
 
 def read_data(filename):
@@ -17,54 +22,51 @@ def tokenize(doc):
     return ['/'.join(t) for t in okt.pos(doc, norm=True, stem=True)]
 
 
+with open('selected_words.json', encoding='utf-8', mode='r') as f:
+    selected_words = json.load(f)
+
+
 def term_frequency(doc):
     return [doc.count(word) for word in selected_words]
 
 
-okt = Okt()
+with open('train_x.json', encoding='utf-8', mode='r') as f:
+    train_x = json.load(f)
+with open('train_y.json', encoding='utf-8', mode='r') as f:
+    train_y = json.load(f)
+with open('test_x.json', encoding='utf-8', mode='r') as f:
+    test_x = json.load(f)
+with open('test_y.json', encoding='utf-8', mode='r') as f:
+    test_y = json.load(f)
 
-with open('stopwords/selected_words.json', encoding='utf-8', mode='r') as f:
-    selected_words = json.load(f)
-
-with open('stopwords/train_x.json', encoding='utf-8', mode='r') as f:
-    x_data = json.load(f)
-
-with open('stopwords/train_y.json', encoding='utf-8', mode='r') as f:
-    y_data = json.load(f)
-
-n_of_train = int(len(x_data) * 0.8)
-n_of_test = int(len(x_data) - n_of_train)
-
-test_x = x_data[n_of_train:]
-test_y = y_data[n_of_train:]
-train_x = x_data[:n_of_train]
-train_y = y_data[:n_of_train]
-
-x_test = np.asarray(test_x).astype('float32')
-y_test = np.asarray(test_y).astype('float32')
 x_train = np.asarray(train_x).astype('float32')
 y_train = np.asarray(train_y).astype('float32')
+x_test = np.asarray(test_x).astype('float32')
+y_test = np.asarray(test_y).astype('float32')
 
-vocab_size = len(selected_words) + 1
+model = models.Sequential()
+model.add(layers.Dense(64, activation='relu', input_shape=(10000,)))
+model.add(layers.Dense(64, activation='relu'))
+model.add(layers.Dense(1, activation='sigmoid'))
 
-model = Sequential()
-model.add(Embedding(vocab_size), 32)
-model.add(SimpleRNN(32))
-model.add(Dense(1, activation='sigmoid'))
+model.compile(optimizer=optimizers.RMSprop(lr=0.001),
+             loss=losses.binary_crossentropy,
+             metrics=[metrics.binary_accuracy])
 
-model.compile(optimizer='rmsprop',
-              loss='binary_crossentropy',
-              metrics=['acc'])
+model.fit(x_train, y_train, epochs=10, batch_size=512)
+results = model.evaluate(x_test,y_test)
+print(results)
 
-history = model.fit(x_train, y_train, epochs=10, batch_size=64, validation_split=0.2)
+testdata = read_data('test.csv')
+f1 = open('result_b.csv', encoding='utf-8', mode='w')
+f1.write('id,smishing'+'\n')
+ret = 0
+cnt = 0
 
-print("\n 테스트 정확도: %.4f" % (model.evaluate(x_test, y_test)[1]))
-
-epochs = range(1, len(history.history['acc']) + 1)
-plt.plot(epochs, history.history['loss'])
-plt.plot(epochs, history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'], loc='upper left')
-plt.show()
+for td in testdata:
+    review = td[2]
+    t = tokenize(review)
+    tf = term_frequency(t)
+    data = np.expand_dims(np.asarray(tf).astype('float32'), axis=0)
+    score = float(model.predict(data))
+    f1.write(td[0]+','+str(score*100)+'\n')

@@ -34,7 +34,6 @@ x_train = []
 if os.path.isfile('act1_1.json'):
     with open('act1_1.json', encoding='utf-8', mode='r') as f:
         x_train = json.load(f)
-
 else:
     data = pd.read_csv('train.csv', encoding='utf-8')
 

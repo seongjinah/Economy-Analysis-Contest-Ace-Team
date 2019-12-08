@@ -1,5 +1,4 @@
 from konlpy.tag import Okt
-import numpy as np
 import json
 import os
 import nltk
@@ -22,44 +21,46 @@ def term_frequency(doc):
 
 okt = Okt()
 
-
-train_data = read_data('train.csv')
-if os.path.isfile('train_token.json'):
-    with open('train_token.json', encoding='utf-8', mode='r') as f:
-        token = json.load(f)
-else:
-    token = ((tokenize(row[2]), row[3]) for row in train_data)
-    with open('train_token.json', encoding="utf-8", mode='w') as make_file:
-        json.dump(token, make_file, ensure_ascii=False, indent="\t")
-
-tokens = [t for d in token for t in d[0]]
-
+tokens = list()
 clean_token = list()
 clean_tokens = list()
 
-stopwords = []
-stopwordset =[]
+train_data = read_data('train.csv')
+
+if os.path.isfile('okt.json'):
+    with open('okt.json', encoding='utf-8', mode='r') as f:
+        token = json.load(f)
+else:
+    token = ((tokenize(row[2]), row[3]) for row in train_data)
+    with open('okt.json', encoding="utf-8", mode='w') as make_file:
+        json.dump(token, make_file, ensure_ascii=False, indent="\t")
+
+for row in token:
+    for data in row[0]:
+        tokens.append([data, row[1]])
+
+stopwords = ['의', '가', '이', '은', '들', '는', '좀', '잘', '걍', '과', '도', '를', '으로', '자', '에', '와', '한', '하다',
+             'XXX', '.', '을', '-', '(', ')', ':', '!', '?', ')-', '.-', 'ㅡ', 'XXXXXX', '..', '.(']
+stopwordset = ['Number']
 
 for t in tokens:
     tex = t[0]
     num = t[1]
-    temp = list()
-    for _tex in tex:
-        t1, t2 = _tex.split('/')
-        if t1 in stopwords:
-            continue
-        if t2 in stopwordset:
-            continue
-        clean_tokens.append(t1)
-        temp.append(_tex)
-    clean_token.append([temp, num])
+    t1, t2 = tex.split('/')
+    if t1 in stopwords:
+        continue
+    if t2 in stopwordset:
+        continue
+    clean_tokens.append(t1)
+    clean_token.append(t)
 
 text = nltk.Text(clean_tokens, name='NMSC')
+
 if os.path.isfile('selected_words.json'):
     with open('selected_words.json', encoding='utf-8', mode='r') as f:
         selected_words = json.load(f)
 else:
-    selected_words = [f[0] for f in text.vocab().most_common(1000)]
+    selected_words = [f[0] for f in text.vocab().most_common(10000)]
     with open('selected_words.json', encoding="utf-8", mode='w') as make_file:
         json.dump(selected_words, make_file, ensure_ascii=False, indent="\t")
 
